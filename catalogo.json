@@ -5,21 +5,29 @@
         "type": "tv",
         "title": "Peaky Blinders: Sangue, Apostas e Navalhas",
         "poster": "https://image.tmdb.org/t/p/w500/vUUqzWa2LnHIVqkaKVlVGkVcZIW.jpg",
-        "overview": "Uma confrontation épico na Birmingham pós-Primeira Guerra Mundial, acompanhando a ascensão de Thomas Shelby e sua família no comando de uma gangue criminosa."
+        "overview": "Uma confronto épico na Birmingham pós-Primeira Guerra Mundial, acompanhando a ascensão de Thomas Shelby e sua família no comando de uma gangue criminosa."
     },
     {
         "id": 2,
-        "tmdb_id": 1396,
+        "tmdb_id": 85937,
         "type": "tv",
-        "title": "Breaking Bad",
-        "poster": "https://image.tmdb.org/t/p/w500/3xnWaCfMxOWFSr2m212m6wJkSj6.jpg",
-        "overview": "Um professor de química do ensino médio diagnosticado com câncer pulmonar inoperável se volta para a fabricação e venda de metanfetamina."
+        "title": "Demon Slayer: Kimetsu no Yaiba (Anime)",
+        "poster": "https://image.tmdb.org/t/p/w500/wrcvXfyFFKMgAKepP0gJ1530A2c.jpg",
+        "overview": "Tanjiro Kamado tem sua vida virada de cabeça para baixo quando sua família é massacrada por um demônio."
     },
     {
         "id": 3,
+        "tmdb_id": 99966,
+        "type": "tv",
+        "title": "Pousando no Amor (Dorama)",
+        "poster": "https://image.tmdb.org/t/p/w500/c7y8t4wJbW3z0N8QeXy6lYv6v1B.jpg",
+        "overview": "Uma herdeira sul-coreana de um conglomerado sofre um acidente de parapente e vai parar na Coreia do Norte."
+    },
+    {
+        "id": 4,
         "tmdb_id": 550,
         "type": "movie",
-        "title": "Clube da Luta",
+        "title": "Clube da Luta (Filme)",
         "poster": "https://image.tmdb.org/t/p/w500/bptfVGEQuv6vDTIMVCHjJ9Dz8PX.jpg",
         "overview": "Homem deprimido que sofre de insônia metódica conhece um vendedor misterioso e juntos criam um clube de luta clandestino."
     }
