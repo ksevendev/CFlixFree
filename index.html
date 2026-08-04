@@ -68,19 +68,27 @@
         K'Seven Developer &copy; 2026 - Powered by SuperFlix API
     </footer>
 
-    <!-- JSON Embutido de Conteúdos (Pode ser externo via AJAX) -->
+    <!-- JSON Embutido de Conteúdos -->
     <script id="database-json" type="application/json">
     [
         {
             "id": 1,
+            "tmdb_id": 60574,
+            "type": "tv",
+            "title": "Peaky Blinders: Sangue, Apostas e Navalhas",
+            "poster": "https://image.tmdb.org/t/p/w500/vUUqzWa2LnHIVqkaKVlVGkVcZIW.jpg",
+            "overview": "Umaenfrentamento épico na Birmingham pós-Primeira Guerra Mundial, acompanhando a ascensão de Thomas Shelby e sua família no comando de uma gangue criminosa."
+        },
+        {
+            "id": 2,
             "tmdb_id": 1396,
             "type": "tv",
             "title": "Breaking Bad",
             "poster": "https://image.tmdb.org/t/p/w500/3xnWaCfMxOWFSr2m212m6wJkSj6.jpg",
-            "overview": "Um professor de química do ensino médio diagnosticado com câncer pulmonar inoperável se volta para a fabricação e venda de metanfetamina para garantir o futuro financeiro de sua família."
+            "overview": "Um professor de química do ensino médio diagnosticado com câncer pulmonar inoperável se volta para a fabricação e venda de metanfetamina."
         },
         {
-            "id": 2,
+            "id": 3,
             "tmdb_id": 550,
             "type": "movie",
             "title": "Clube da Luta",
@@ -99,7 +107,6 @@
         let listaEpisodiosCache = [];
 
         document.addEventListener("DOMContentLoaded", () => {
-            // Carrega o JSON embutido (Pode ser substituído por fetch('catalogo.json') se hospedar arquivo separado)
             try {
                 catalogo = JSON.parse(document.getElementById('database-json').textContent);
             } catch (e) {
@@ -157,12 +164,10 @@
             } else {
                 seriesControls.classList.add('hidden');
                 document.getElementById('episodes-list').innerHTML = '';
-                // Para filmes, carrega direto o player embed da SuperFlix API
                 document.getElementById('media-player').src = `https://superflixapi.pro/filme/${itemAtual.tmdb_id}`;
             }
         }
 
-        // Requisição AJAX para buscar temporadas da Série via SuperFlix API
         function carregarTemporadas(tmdbId) {
             const xhr = new XMLHttpRequest();
             xhr.open('GET', `https://superflixapi.pro/serie/${tmdbId}`, true);
@@ -172,22 +177,7 @@
                     const selectSeason = document.getElementById('select-season');
                     selectSeason.innerHTML = '';
                     
-                    // Suposição baseada na estrutura padrão da API (quantidades de temporadas)
-                    const totalTemporadas = data.seasons || data.total_seasons || 1; 
-                    
-                    // Caso a API retorne um array direto de temporadas ou número:
-                    if (Array.isArray(data)) {
-                        // Se a api retornar a lista de eps direto
-                        listaEpisodiosCache = data;
-                        popularEpisodiosUnicos();
-                        return;
-                    }
-
-                    // Se retornar dados estruturados por temporadas
-                    window.serieDataCache = data;
-                    
-                    // Simulação padrão caso a API retorne objeto com temporadas
-                    let numSeasons = data.seasons ? data.seasons.length : 1;
+                    let numSeasons = data.seasons ? data.seasons.length : 6; // Peaky Blinders possui 6 temporadas fixas
                     for (let i = 1; i <= numSeasons; i++) {
                         selectSeason.innerHTML += `<option value="${i}">Temporada ${i}</option>`;
                     }
@@ -204,7 +194,6 @@
                 temporadaAtual = parseInt(selectSeason.value);
             }
 
-            // Requisição AJAX para os episódios da temporada específica
             const xhr = new XMLHttpRequest();
             xhr.open('GET', `https://superflixapi.pro/serie/${itemAtual.tmdb_id}/${temporadaAtual}`, true);
             xhr.onload = function() {
@@ -214,7 +203,6 @@
                     
                     renderizarListaEpisodios();
                     
-                    // Inicia o primeiro episódio por padrão ao trocar de temporada
                     if (listaEpisodiosCache.length > 0) {
                         tocarEpisodio(1, listaEpisodiosCache[0].episode || 1);
                     }
@@ -227,6 +215,7 @@
             const container = document.getElementById('episodes-list');
             container.innerHTML = '';
 
+            listaEpisodiosCache.exceptions = false;
             listaEpisodiosCache.forEach((ep, index) => {
                 const epNum = ep.episode || (index + 1);
                 const epTitle = ep.name || `Episódio ${epNum}`;
@@ -254,13 +243,7 @@
             renderizarListaEpisodios();
         }
 
-        // Função para passar automaticamente para o próximo episódio
         function configurarListenerPlayer() {
-            // Como o player roda dentro de um iframe cross-domain (SuperFlix), a detecção exata do "ended" 
-            // direto pelo DOM do iframe é bloqueada por políticas de segurança CORS do navegador.
-            // Para contornar isso de forma robusta para GitHub Pages, podemos escutar mensagens postMessage 
-            // caso a API provedora envie, ou implementar um gatilio de transição inteligente por tempo/interação.
-            
             window.addEventListener("message", (event) => {
                 if (event.data && event.data.type === 'video_ended') {
                     proximoEpisodio();
@@ -277,9 +260,6 @@
                 const proximoEp = listaEpisodiosCache[proximoIndex];
                 const proxNum = proximoEp.episode || (proximoIndex + 1);
                 tocarEpisodio(temporadaAtual, proxNum);
-            } else {
-                // Se acabou os episódios da temporada, tenta avançar a temporada (opcional)
-                console.log("Fim da temporada atual.");
             }
         }
     </script>
