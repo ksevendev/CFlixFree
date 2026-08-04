@@ -1,6 +1,6 @@
 {
-  "name": "K'Seven Stream",
-  "short_name": "KStream",
+  "name": "CineFlix",
+  "short_name": "CineFlix",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#0f172a",
