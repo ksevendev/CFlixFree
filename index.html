@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>K'Seven Stream</title>
+    <!-- Tailwind CSS para estilização rápida e moderna -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #0f172a; color: #f8fafc; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col font-sans">
+
+    <!-- Header -->
+    <header class="bg-slate-900 border-b border-slate-800 p-4 shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-black text-cyan-400 tracking-wider">K'SEVEN <span class="text-white">STREAM</span></h1>
+            <button onclick="voltarHome()" class="hidden id-home bg-slate-800 hover:bg-slate-700 text-sm px-4 py-2 rounded-lg font-medium transition">Início</button>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-grow max-w-7xl w-full mx-auto p-4 md:p-6">
+
+        <!-- Tela Inicial: Catálogo -->
+        <section id="view-home">
+            <h2 class="text-xl font-bold mb-6 text-slate-200">Catálogo Disponível</h2>
+            <div id="catalog-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                <!-- Preenchido via JS -->
+            </div>
+        </section>
+
+        <!-- Tela de Player / Detalhes -->
+        <section id="view-player" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Player e Informações -->
+            <div class="lg:col-span-2 space-y-4">
+                <div class="aspect-video w-full bg-black rounded-xl overflow-hidden shadow-2xl relative">
+                    <iframe id="media-player" src="" class="w-full h-full border-0" allowfullscreen></iframe>
+                </div>
+                <div>
+                    <h2 id="media-title" class="text-2xl font-bold text-white"></h2>
+                    <p id="media-overview" class="text-slate-400 text-sm mt-2"></p>
+                </div>
+            </div>
+
+            <!-- Seletor de Temporadas e Episódios (Para Séries) ou Lista Lateral -->
+            <div id="sidebar-container" class="bg-slate-900/80 backdrop-blur border border-slate-800 rounded-xl p-4 flex flex-col h-[500px] lg:h-auto">
+                <div id="series-controls" class="hidden space-y-3 mb-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1">TEMPORADA</label>
+                        <select id="select-season" onchange="carregarEpisodios()" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-cyan-500"></select>
+                    </div>
+                </div>
+                <h3 class="text-sm font-bold text-slate-400 tracking-wider mb-2">EPISÓDIOS</h3>
+                <div id="episodes-list" class="flex-grow overflow-y-auto custom-scrollbar space-y-2 pr-1">
+                    <!-- Preenchido via JS -->
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 border-t border-slate-800 py-4 text-center text-xs text-slate-500">
+        K'Seven Developer &copy; 2026 - Powered by SuperFlix API
+    </footer>
+
+    <!-- JSON Embutido de Conteúdos (Pode ser externo via AJAX) -->
+    <script id="database-json" type="application/json">
+    [
+        {
+            "id": 1,
+            "tmdb_id": 1396,
+            "type": "tv",
+            "title": "Breaking Bad",
+            "poster": "https://image.tmdb.org/t/p/w500/3xnWaCfMxOWFSr2m212m6wJkSj6.jpg",
+            "overview": "Um professor de química do ensino médio diagnosticado com câncer pulmonar inoperável se volta para a fabricação e venda de metanfetamina para garantir o futuro financeiro de sua família."
+        },
+        {
+            "id": 2,
+            "tmdb_id": 550,
+            "type": "movie",
+            "title": "Clube da Luta",
+            "poster": "https://image.tmdb.org/t/p/w500/bptfVGEQuv6vDTIMVCHjJ9Dz8PX.jpg",
+            "overview": "Homem deprimido que sofre de insônia metódica conhece um vendedor misterioso e juntos criam um clube de luta clandestino."
+        }
+    ]
+    </script>
+
+    <!-- Script Principal -->
+    <script>
+        let catalogo = [];
+        let itemAtual = null;
+        let temporadaAtual = 1;
+        let episodioAtual = 1;
+        let listaEpisodiosCache = [];
+
+        document.addEventListener("DOMContentLoaded", () => {
+            // Carrega o JSON embutido (Pode ser substituído por fetch('catalogo.json') se hospedar arquivo separado)
+            try {
+                catalogo = JSON.parse(document.getElementById('database-json').textContent);
+            } catch (e) {
+                console.error("Erro ao ler JSON:", e);
+            }
+            renderizarCatalogo();
+            configurarListenerPlayer();
+        });
+
+        function renderizarCatalogo() {
+            const grid = document.getElementById('catalog-grid');
+            grid.innerHTML = '';
+            catalogo.forEach(item => {
+                grid.innerHTML += `
+                    <div onclick="selecionarMidia(${item.id})" class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden group cursor-pointer hover:border-cyan-500/50 transition duration-300 shadow-lg">
+                        <div class="aspect-[2/3] w-full overflow-hidden bg-slate-800">
+                            <img src="${item.poster}" alt="${item.title}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+                        </div>
+                        <div class="p-3">
+                            <h4 class="font-bold text-sm truncate text-white">${item.title}</h4>
+                            <span class="text-[10px] uppercase font-semibold text-cyan-400 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-800/50 mt-1 inline-block">
+                                ${item.type === 'tv' ? 'Série' : 'Filme'}
+                            </span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function voltarHome() {
+            document.getElementById('view-player').classList.add('hidden');
+            document.getElementById('view-home').classList.remove('hidden');
+            document.querySelector('.id-home').classList.add('hidden');
+            document.getElementById('media-player').src = '';
+        }
+
+        async function selecionarMidia(id) {
+            itemAtual = catalogo.find(i => i.id === id);
+            if (!itemAtual) return;
+
+            document.getElementById('view-home').classList.add('hidden');
+            document.getElementById('view-player').classList.remove('hidden');
+            document.querySelector('.id-home').classList.remove('hidden');
+
+            document.getElementById('media-title').innerText = itemAtual.title;
+            document.getElementById('media-overview').innerText = itemAtual.overview;
+
+            const seriesControls = document.getElementById('series-controls');
+            const sidebarContainer = document.getElementById('sidebar-container');
+
+            if (itemAtual.type === 'tv') {
+                seriesControls.classList.remove('hidden');
+                sidebarContainer.classList.remove('hidden');
+                await carregarTemporadas(itemAtual.tmdb_id);
+            } else {
+                seriesControls.classList.add('hidden');
+                document.getElementById('episodes-list').innerHTML = '';
+                // Para filmes, carrega direto o player embed da SuperFlix API
+                document.getElementById('media-player').src = `https://superflixapi.pro/filme/${itemAtual.tmdb_id}`;
+            }
+        }
+
+        // Requisição AJAX para buscar temporadas da Série via SuperFlix API
+        function carregarTemporadas(tmdbId) {
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', `https://superflixapi.pro/serie/${tmdbId}`, true);
+            xhr.onload = function() {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    const data = JSON.parse(xhr.responseText);
+                    const selectSeason = document.getElementById('select-season');
+                    selectSeason.innerHTML = '';
+                    
+                    // Suposição baseada na estrutura padrão da API (quantidades de temporadas)
+                    const totalTemporadas = data.seasons || data.total_seasons || 1; 
+                    
+                    // Caso a API retorne um array direto de temporadas ou número:
+                    if (Array.isArray(data)) {
+                        // Se a api retornar a lista de eps direto
+                        listaEpisodiosCache = data;
+                        popularEpisodiosUnicos();
+                        return;
+                    }
+
+                    // Se retornar dados estruturados por temporadas
+                    window.serieDataCache = data;
+                    
+                    // Simulação padrão caso a API retorne objeto com temporadas
+                    let numSeasons = data.seasons ? data.seasons.length : 1;
+                    for (let i = 1; i <= numSeasons; i++) {
+                        selectSeason.innerHTML += `<option value="${i}">Temporada ${i}</option>`;
+                    }
+                    temporadaAtual = 1;
+                    carregarEpisodios();
+                }
+            };
+            xhr.send();
+        }
+
+        function carregarEpisodios() {
+            const selectSeason = document.getElementById('select-season');
+            if(selectSeason && selectSeason.value) {
+                temporadaAtual = parseInt(selectSeason.value);
+            }
+
+            // Requisição AJAX para os episódios da temporada específica
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', `https://superflixapi.pro/serie/${itemAtual.tmdb_id}/${temporadaAtual}`, true);
+            xhr.onload = function() {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    const episodios = JSON.parse(xhr.responseText);
+                    listaEpisodiosCache = Array.isArray(episodios) ? episodios : (episodios.episodes || []);
+                    
+                    renderizarListaEpisodios();
+                    
+                    // Inicia o primeiro episódio por padrão ao trocar de temporada
+                    if (listaEpisodiosCache.length > 0) {
+                        tocarEpisodio(1, listaEpisodiosCache[0].episode || 1);
+                    }
+                }
+            };
+            xhr.send();
+        }
+
+        function renderizarListaEpisodios() {
+            const container = document.getElementById('episodes-list');
+            container.innerHTML = '';
+
+            listaEpisodiosCache.forEach((ep, index) => {
+                const epNum = ep.episode || (index + 1);
+                const epTitle = ep.name || `Episódio ${epNum}`;
+                const isAtivo = (epNum === episodioAtual);
+
+                container.innerHTML += `
+                    <div onclick="tocarEpisodio(${temporadaAtual}, ${epNum})" class="p-3 rounded-lg cursor-pointer transition flex items-center justify-between border ${isAtivo ? 'bg-cyan-950/40 border-cyan-500 text-cyan-300' : 'bg-slate-800/50 border-slate-800 hover:bg-slate-800 text-slate-300'}">
+                        <div class="truncate pr-2">
+                            <span class="text-xs font-bold opacity-60 mr-2">E${epNum}</span>
+                            <span class="text-sm font-medium">${epTitle}</span>
+                        </div>
+                        ${isAtivo ? '<span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>' : ''}
+                    </div>
+                `;
+            });
+        }
+
+        function tocarEpisodio(temporada, episodio) {
+            temporadaAtual = temporada;
+            episodioAtual = episodio;
+            
+            const urlEmbed = `https://superflixapi.pro/serie/${itemAtual.tmdb_id}/${temporada}/${episodio}`;
+            document.getElementById('media-player').src = urlEmbed;
+            
+            renderizarListaEpisodios();
+        }
+
+        // Função para passar automaticamente para o próximo episódio
+        function configurarListenerPlayer() {
+            // Como o player roda dentro de um iframe cross-domain (SuperFlix), a detecção exata do "ended" 
+            // direto pelo DOM do iframe é bloqueada por políticas de segurança CORS do navegador.
+            // Para contornar isso de forma robusta para GitHub Pages, podemos escutar mensagens postMessage 
+            // caso a API provedora envie, ou implementar um gatilio de transição inteligente por tempo/interação.
+            
+            window.addEventListener("message", (event) => {
+                if (event.data && event.data.type === 'video_ended') {
+                    proximoEpisodio();
+                }
+            });
+        }
+
+        function proximoEpisodio() {
+            if (itemAtual.type !== 'tv') return;
+            
+            const proximoIndex = listaEpisodiosCache.findIndex(ep => (ep.episode || (listaEpisodiosCache.indexOf(ep) + 1)) === episodioAtual) + 1;
+            
+            if (proximoIndex < listaEpisodiosCache.length) {
+                const proximoEp = listaEpisodiosCache[proximoIndex];
+                const proxNum = proximoEp.episode || (proximoIndex + 1);
+                tocarEpisodio(temporadaAtual, proxNum);
+            } else {
+                // Se acabou os episódios da temporada, tenta avançar a temporada (opcional)
+                console.log("Fim da temporada atual.");
+            }
+        }
+    </script>
+</body>
+</html>
