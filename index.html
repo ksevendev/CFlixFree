@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>K'Seven Stream</title>
-    <!-- Tailwind CSS (Modo de produção otimizado via CDN) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background-color: #0f172a; color: #f8fafc; }
@@ -47,7 +46,7 @@
                 <div id="series-controls" class="hidden space-y-3 mb-4">
                     <div>
                         <label class="block text-xs font-semibold text-slate-400 mb-1">TEMPORADA</label>
-                        <select id="select-season" onchange="carregarEpisodios()" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-cyan-500"></select>
+                        <select id="select-season" onchange="mudarTemporada()" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-cyan-500"></select>
                     </div>
                 </div>
                 <h3 class="text-sm font-bold text-slate-400 tracking-wider mb-2">EPISÓDIOS</h3>
@@ -68,10 +67,6 @@
         let itemAtual = null;
         let temporadaAtual = 1;
         let episodioAtual = 1;
-        let listaEpisodiosCache = [];
-
-        // URL de proxy CORS livre para contornar restrições de navegadores em APIs externas
-        const CORS_PROXY = "https://api.allorigins.win/raw?url=";
 
         document.addEventListener("DOMContentLoaded", () => {
             carregarCatalogoJSON();
@@ -137,102 +132,57 @@
             if (itemAtual.type === 'tv') {
                 seriesControls.classList.remove('hidden');
                 sidebarContainer.classList.remove('hidden');
-                carregarTemporadas(itemAtual.tmdb_id);
+                popularTemporadas();
             } else {
                 seriesControls.classList.add('hidden');
-                document.getElementById('episodes-list').innerHTML = '';
+                sidebarContainer.classList.add('hidden');
                 document.getElementById('media-player').src = `https://superflixapi.pro/filme/${itemAtual.tmdb_id}`;
             }
         }
 
-        function carregarTemporadas(tmdbId) {
-            const targetUrl = encodeURIComponent(`https://superflixapi.pro/serie/${tmdbId}`);
-            const xhr = new XMLHttpRequest();
-            xhr.open('GET', CORS_PROXY + targetUrl, true);
-            xhr.onload = function() {
-                if (xhr.status >= 200 && xhr.status < 300) {
-                    try {
-                        const data = JSON.parse(xhr.responseText);
-                        const selectSeason = document.getElementById('select-season');
-                        selectSeason.innerHTML = '';
-                        
-                        let totalTemporadas = 1;
-                        if (Array.isArray(data)) {
-                            totalTemporadas = data.length;
-                        } else if (data.seasons && Array.isArray(data.seasons)) {
-                            totalTemporadas = data.seasons.length;
-                        } else if (data.total_seasons) {
-                            totalTemporadas = data.total_seasons;
-                        } else {
-                            totalTemporadas = 6; // Fallback para Peaky Blinders
-                        }
+        function popularTemporadas() {
+            const selectSeason = document.getElementById('select-season');
+            selectSeason.innerHTML = '';
 
-                        for (let i = 1; i <= totalTemporadas; i++) {
-                            selectSeason.innerHTML += `<option value="${i}">Temporada ${i}</option>`;
-                        }
-                        
-                        temporadaAtual = 1;
-                        carregarEpisodios();
-                    } catch (err) {
-                        console.error("Erro ao processar temporadas via proxy:", err);
-                    }
-                }
-            };
-            xhr.send();
+            if (!itemAtual.seasons) return;
+
+            for (let temporada in itemAtual.seasons) {
+                selectSeason.innerHTML += `<option value="${temporada}">Temporada ${temporada}</option>`;
+            }
+
+            temporadaAtual = 1;
+            carregarEpisodios();
+        }
+
+        function mudarTemporada() {
+            const selectSeason = document.getElementById('select-season');
+            temporadaAtual = parseInt(selectSeason.value);
+            carregarEpisodios();
         }
 
         function carregarEpisodios() {
-            const selectSeason = document.getElementById('select-season');
-            if (selectSeason && selectSeason.value) {
-                temporadaAtual = parseInt(selectSeason.value);
-            }
-
-            const targetUrl = encodeURIComponent(`https://superflixapi.pro/serie/${itemAtual.tmdb_id}/${temporadaAtual}`);
-            const xhr = new XMLHttpRequest();
-            xhr.open('GET', CORS_PROXY + targetUrl, true);
-            xhr.onload = function() {
-                if (xhr.status >= 200 && xhr.status < 300) {
-                    try {
-                        const episodios = JSON.parse(xhr.responseText);
-                        listaEpisodiosCache = Array.isArray(episodios) ? episodios : (episodios.episodes || episodios.eps || []);
-                        
-                        renderizarListaEpisodios();
-                        
-                        if (listaEpisodiosCache.length > 0) {
-                            tocarEpisodio(temporadaAtual, listaEpisodiosCache[0].episode || 1);
-                        }
-                    } catch (err) {
-                        console.error("Erro ao processar episódios via proxy:", err);
-                    }
-                }
-            };
-            xhr.send();
-        }
-
-        function renderizarListaEpisodios() {
             const container = document.getElementById('episodes-list');
             container.innerHTML = '';
 
-            if (listaEpisodiosCache.length === 0) {
-                container.innerHTML = `<p class="text-xs text-slate-500 text-center py-4">Nenhum episódio encontrado.</p>`;
-                return;
-            }
+            const totalEps = itemAtual.seasons[temporadaAtual] || 0;
 
-            listaEpisodiosCache.forEach((ep, index) => {
-                const epNum = ep.episode || ep.eps || (index + 1);
-                const epTitle = ep.name || ep.title || `Episódio ${epNum}`;
-                const isAtivo = (epNum === episodioAtual);
+            for (let i = 1; i <= totalEps; i++) {
+                const isAtivo = (i === episodioAtual && temporadaAtual === parseInt(document.getElementById('select-season').value));
 
                 container.innerHTML += `
-                    <div onclick="tocarEpisodio(${temporadaAtual}, ${epNum})" class="p-3 rounded-lg cursor-pointer transition flex items-center justify-between border ${isAtivo ? 'bg-cyan-950/40 border-cyan-500 text-cyan-300' : 'bg-slate-800/50 border-slate-800 hover:bg-slate-800 text-slate-300'}">
+                    <div onclick="tocarEpisodio(${temporadaAtual}, ${i})" class="p-3 rounded-lg cursor-pointer transition flex items-center justify-between border ${isAtivo ? 'bg-cyan-950/40 border-cyan-500 text-cyan-300' : 'bg-slate-800/50 border-slate-800 hover:bg-slate-800 text-slate-300'}">
                         <div class="truncate pr-2">
-                            <span class="text-xs font-bold opacity-60 mr-2">E${epNum}</span>
-                            <span class="text-sm font-medium">${epTitle}</span>
+                            <span class="text-xs font-bold opacity-60 mr-2">E${i}</span>
+                            <span class="text-sm font-medium">Episódio ${i}</span>
                         </div>
                         ${isAtivo ? '<span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>' : ''}
                     </div>
                 `;
-            });
+            }
+
+            if (totalEps > 0) {
+                tocarEpisodio(temporadaAtual, 1);
+            }
         }
 
         function tocarEpisodio(temporada, episodio) {
@@ -240,7 +190,23 @@
             episodioAtual = episodio;
             const urlEmbed = `https://superflixapi.pro/serie/${itemAtual.tmdb_id}/${temporada}/${episodio}`;
             document.getElementById('media-player').src = urlEmbed;
-            renderizarListaEpisodios();
+            
+            const container = document.getElementById('episodes-list');
+            const totalEps = itemAtual.seasons[temporadaAtual] || 0;
+            container.innerHTML = '';
+
+            for (let i = 1; i <= totalEps; i++) {
+                const isAtivo = (i === episodioAtual);
+                container.innerHTML += `
+                    <div onclick="tocarEpisodio(${temporadaAtual}, ${i})" class="p-3 rounded-lg cursor-pointer transition flex items-center justify-between border ${isAtivo ? 'bg-cyan-950/40 border-cyan-500 text-cyan-300' : 'bg-slate-800/50 border-slate-800 hover:bg-slate-800 text-slate-300'}">
+                        <div class="truncate pr-2">
+                            <span class="text-xs font-bold opacity-60 mr-2">E${i}</span>
+                            <span class="text-sm font-medium">Episódio ${i}</span>
+                        </div>
+                        ${isAtivo ? '<span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>' : ''}
+                    </div>
+                `;
+            }
         }
     </script>
 </body>
