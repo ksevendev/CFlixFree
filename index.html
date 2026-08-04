@@ -4,6 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>K'Seven Stream</title>
+
+    
+    <!-- Metadados PWA para iOS e Android -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="KStream">
+    <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/github/explore/80688e429a7d4ef2fca1e82350fe8e3517d3494d/topics/javascript/javascript.png">
+    
     <!--[if IE ]>
     <link rel="shortcut icon" href="https://static.convertio.co/favicon.ico" />
     <![endif]-->
@@ -74,9 +84,17 @@
     <footer class="bg-slate-900 border-t border-slate-800 py-4 text-center text-xs text-slate-500">
         K'Seven Developer &copy; 2026 - Powered by SuperFlix API
     </footer>
-
-    <!-- Script Principal -->
     <script>
+        // Registrar Service Worker para ativar PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then((reg) => console.log('Service Worker registrado com sucesso:', reg.scope))
+                    .catch((err) => console.log('Falha ao registrar Service Worker:', err));
+            });
+        }
+    
+        // Script Principal
         let catalogo = [];
         let itemAtual = null;
         let temporadaAtual = 1;
