@@ -1,0 +1,26 @@
+[
+    {
+        "id": 1,
+        "tmdb_id": 60574,
+        "type": "tv",
+        "title": "Peaky Blinders: Sangue, Apostas e Navalhas",
+        "poster": "https://image.tmdb.org/t/p/w500/vUUqzWa2LnHIVqkaKVlVGkVcZIW.jpg",
+        "overview": "Uma confrontation épico na Birmingham pós-Primeira Guerra Mundial, acompanhando a ascensão de Thomas Shelby e sua família no comando de uma gangue criminosa."
+    },
+    {
+        "id": 2,
+        "tmdb_id": 1396,
+        "type": "tv",
+        "title": "Breaking Bad",
+        "poster": "https://image.tmdb.org/t/p/w500/3xnWaCfMxOWFSr2m212m6wJkSj6.jpg",
+        "overview": "Um professor de química do ensino médio diagnosticado com câncer pulmonar inoperável se volta para a fabricação e venda de metanfetamina."
+    },
+    {
+        "id": 3,
+        "tmdb_id": 550,
+        "type": "movie",
+        "title": "Clube da Luta",
+        "poster": "https://image.tmdb.org/t/p/w500/bptfVGEQuv6vDTIMVCHjJ9Dz8PX.jpg",
+        "overview": "Homem deprimido que sofre de insônia metódica conhece um vendedor misterioso e juntos criam um clube de luta clandestino."
+    }
+]
