@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>K'Seven Stream</title>
-    <!-- Tailwind CSS para estilização rápida e moderna -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background-color: #0f172a; color: #f8fafc; }
@@ -29,13 +29,12 @@
         <section id="view-home">
             <h2 class="text-xl font-bold mb-6 text-slate-200">Catálogo Disponível</h2>
             <div id="catalog-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                <!-- Preenchido via JS -->
+                <!-- Preenchido dinamicamente via AJAX -->
             </div>
         </section>
 
         <!-- Tela de Player / Detalhes -->
         <section id="view-player" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Player e Informações -->
             <div class="lg:col-span-2 space-y-4">
                 <div class="aspect-video w-full bg-black rounded-xl overflow-hidden shadow-2xl relative">
                     <iframe id="media-player" src="" class="w-full h-full border-0" allowfullscreen></iframe>
@@ -46,8 +45,7 @@
                 </div>
             </div>
 
-            <!-- Seletor de Temporadas e Episódios (Para Séries) ou Lista Lateral -->
-            <div id="sidebar-container" class="bg-slate-900/80 backdrop-blur border border-slate-800 rounded-xl p-4 flex flex-col h-[500px] lg:h-auto">
+            <div id="sidebar-container" class="bg-slate-900/85 backdrop-blur border border-slate-800 rounded-xl p-4 flex flex-col h-[500px] lg:h-auto">
                 <div id="series-controls" class="hidden space-y-3 mb-4">
                     <div>
                         <label class="block text-xs font-semibold text-slate-400 mb-1">TEMPORADA</label>
@@ -55,9 +53,7 @@
                     </div>
                 </div>
                 <h3 class="text-sm font-bold text-slate-400 tracking-wider mb-2">EPISÓDIOS</h3>
-                <div id="episodes-list" class="flex-grow overflow-y-auto custom-scrollbar space-y-2 pr-1">
-                    <!-- Preenchido via JS -->
-                </div>
+                <div id="episodes-list" class="flex-grow overflow-y-auto custom-scrollbar space-y-2 pr-1"></div>
             </div>
         </section>
 
@@ -68,36 +64,6 @@
         K'Seven Developer &copy; 2026 - Powered by SuperFlix API
     </footer>
 
-    <!-- JSON Embutido de Conteúdos -->
-    <script id="database-json" type="application/json">
-    [
-        {
-            "id": 1,
-            "tmdb_id": 60574,
-            "type": "tv",
-            "title": "Peaky Blinders: Sangue, Apostas e Navalhas",
-            "poster": "https://image.tmdb.org/t/p/w500/vUUqzWa2LnHIVqkaKVlVGkVcZIW.jpg",
-            "overview": "Umaenfrentamento épico na Birmingham pós-Primeira Guerra Mundial, acompanhando a ascensão de Thomas Shelby e sua família no comando de uma gangue criminosa."
-        },
-        {
-            "id": 2,
-            "tmdb_id": 1396,
-            "type": "tv",
-            "title": "Breaking Bad",
-            "poster": "https://image.tmdb.org/t/p/w500/3xnWaCfMxOWFSr2m212m6wJkSj6.jpg",
-            "overview": "Um professor de química do ensino médio diagnosticado com câncer pulmonar inoperável se volta para a fabricação e venda de metanfetamina."
-        },
-        {
-            "id": 3,
-            "tmdb_id": 550,
-            "type": "movie",
-            "title": "Clube da Luta",
-            "poster": "https://image.tmdb.org/t/p/w500/bptfVGEQuv6vDTIMVCHjJ9Dz8PX.jpg",
-            "overview": "Homem deprimido que sofre de insônia metódica conhece um vendedor misterioso e juntos criam um clube de luta clandestino."
-        }
-    ]
-    </script>
-
     <!-- Script Principal -->
     <script>
         let catalogo = [];
@@ -107,14 +73,27 @@
         let listaEpisodiosCache = [];
 
         document.addEventListener("DOMContentLoaded", () => {
-            try {
-                catalogo = JSON.parse(document.getElementById('database-json').textContent);
-            } catch (e) {
-                console.error("Erro ao ler JSON:", e);
-            }
-            renderizarCatalogo();
-            configurarListenerPlayer();
+            carregarCatalogoJSON();
         });
+
+        // Carrega o JSON separado via AJAX
+        function carregarCatalogoJSON() {
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', 'catalogo.json', true);
+            xhr.onload = function() {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    try {
+                        catalogo = JSON.parse(xhr.responseText);
+                        renderizarCatalogo();
+                    } catch (e) {
+                        console.error("Erro ao analisar catalogo.json", e);
+                    }
+                } else {
+                    console.error("Erro ao carregar o catálogo JSON. Status:", xhr.status);
+                }
+            };
+            xhr.send();
+        }
 
         function renderizarCatalogo() {
             const grid = document.getElementById('catalog-grid');
@@ -160,7 +139,7 @@
             if (itemAtual.type === 'tv') {
                 seriesControls.classList.remove('hidden');
                 sidebarContainer.classList.remove('hidden');
-                await carregarTemporadas(itemAtual.tmdb_id);
+                carregarTemporadas(itemAtual.tmdb_id);
             } else {
                 seriesControls.classList.add('hidden');
                 document.getElementById('episodes-list').innerHTML = '';
@@ -177,7 +156,7 @@
                     const selectSeason = document.getElementById('select-season');
                     selectSeason.innerHTML = '';
                     
-                    let numSeasons = data.seasons ? data.seasons.length : 6; // Peaky Blinders possui 6 temporadas fixas
+                    let numSeasons = data.seasons ? data.seasons.length : 1;
                     for (let i = 1; i <= numSeasons; i++) {
                         selectSeason.innerHTML += `<option value="${i}">Temporada ${i}</option>`;
                     }
@@ -200,11 +179,9 @@
                 if (xhr.status >= 200 && xhr.status < 300) {
                     const episodios = JSON.parse(xhr.responseText);
                     listaEpisodiosCache = Array.isArray(episodios) ? episodios : (episodios.episodes || []);
-                    
                     renderizarListaEpisodios();
-                    
                     if (listaEpisodiosCache.length > 0) {
-                        tocarEpisodio(1, listaEpisodiosCache[0].episode || 1);
+                        tocarEpisodio(temporadaAtual, listaEpisodiosCache[0].episode || 1);
                     }
                 }
             };
@@ -215,7 +192,6 @@
             const container = document.getElementById('episodes-list');
             container.innerHTML = '';
 
-            listaEpisodiosCache.exceptions = false;
             listaEpisodiosCache.forEach((ep, index) => {
                 const epNum = ep.episode || (index + 1);
                 const epTitle = ep.name || `Episódio ${epNum}`;
@@ -236,31 +212,9 @@
         function tocarEpisodio(temporada, episodio) {
             temporadaAtual = temporada;
             episodioAtual = episodio;
-            
             const urlEmbed = `https://superflixapi.pro/serie/${itemAtual.tmdb_id}/${temporada}/${episodio}`;
             document.getElementById('media-player').src = urlEmbed;
-            
             renderizarListaEpisodios();
-        }
-
-        function configurarListenerPlayer() {
-            window.addEventListener("message", (event) => {
-                if (event.data && event.data.type === 'video_ended') {
-                    proximoEpisodio();
-                }
-            });
-        }
-
-        function proximoEpisodio() {
-            if (itemAtual.type !== 'tv') return;
-            
-            const proximoIndex = listaEpisodiosCache.findIndex(ep => (ep.episode || (listaEpisodiosCache.indexOf(ep) + 1)) === episodioAtual) + 1;
-            
-            if (proximoIndex < listaEpisodiosCache.length) {
-                const proximoEp = listaEpisodiosCache[proximoIndex];
-                const proxNum = proximoEp.episode || (proximoIndex + 1);
-                tocarEpisodio(temporadaAtual, proxNum);
-            }
         }
     </script>
 </body>
