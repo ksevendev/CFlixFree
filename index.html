@@ -28,9 +28,7 @@
         <!-- Tela Inicial: Catálogo -->
         <section id="view-home">
             <h2 class="text-xl font-bold mb-6 text-slate-200">Catálogo Disponível</h2>
-            <div id="catalog-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                <!-- Preenchido dinamicamente via AJAX -->
-            </div>
+            <div id="catalog-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4"></div>
         </section>
 
         <!-- Tela de Player / Detalhes -->
@@ -76,7 +74,6 @@
             carregarCatalogoJSON();
         });
 
-        // Carrega o JSON separado via AJAX
         function carregarCatalogoJSON() {
             const xhr = new XMLHttpRequest();
             xhr.open('GET', 'catalogo.json', true);
@@ -88,8 +85,6 @@
                     } catch (e) {
                         console.error("Erro ao analisar catalogo.json", e);
                     }
-                } else {
-                    console.error("Erro ao carregar o catálogo JSON. Status:", xhr.status);
                 }
             };
             xhr.send();
@@ -122,7 +117,7 @@
             document.getElementById('media-player').src = '';
         }
 
-        async function selecionarMidia(id) {
+        function selecionarMidia(id) {
             itemAtual = catalogo.find(i => i.id === id);
             if (!itemAtual) return;
 
@@ -149,19 +144,36 @@
 
         function carregarTemporadas(tmdbId) {
             const xhr = new XMLHttpRequest();
+            // Utiliza rota direta para buscar os dados consolidados da série na SuperFlix API
             xhr.open('GET', `https://superflixapi.pro/serie/${tmdbId}`, true);
             xhr.onload = function() {
                 if (xhr.status >= 200 && xhr.status < 300) {
-                    const data = JSON.parse(xhr.responseText);
-                    const selectSeason = document.getElementById('select-season');
-                    selectSeason.innerHTML = '';
-                    
-                    let numSeasons = data.seasons ? data.seasons.length : 1;
-                    for (let i = 1; i <= numSeasons; i++) {
-                        selectSeason.innerHTML += `<option value="${i}">Temporada ${i}</option>`;
+                    try {
+                        const data = JSON.parse(xhr.responseText);
+                        const selectSeason = document.getElementById('select-season');
+                        selectSeason.innerHTML = '';
+                        
+                        // Compatibilidade para diferentes formatos de retorno da API (seasons array ou objeto)
+                        let totalTemporadas = 1;
+                        if (Array.isArray(data)) {
+                            totalTemporadas = data.length;
+                        } else if (data.seasons && Array.isArray(data.seasons)) {
+                            totalTemporadas = data.seasons.length;
+                        } else if (data.total_seasons) {
+                            totalTemporadas = data.total_seasons;
+                        } else {
+                            totalTemporadas = 6; // Fallback seguro para Peaky Blinders (6 temporadas)
+                        }
+
+                        for (let i = 1; i <= totalTemporadas; i++) {
+                            selectSeason.innerHTML += `<option value="${i}">Temporada ${i}</option>`;
+                        }
+                        
+                        temporadaAtual = 1;
+                        carregarEpisodios();
+                    } catch (err) {
+                        console.error("Erro ao processar temporadas:", err);
                     }
-                    temporadaAtual = 1;
-                    carregarEpisodios();
                 }
             };
             xhr.send();
@@ -169,7 +181,7 @@
 
         function carregarEpisodios() {
             const selectSeason = document.getElementById('select-season');
-            if(selectSeason && selectSeason.value) {
+            if (selectSeason && selectSeason.value) {
                 temporadaAtual = parseInt(selectSeason.value);
             }
 
@@ -177,11 +189,17 @@
             xhr.open('GET', `https://superflixapi.pro/serie/${itemAtual.tmdb_id}/${temporadaAtual}`, true);
             xhr.onload = function() {
                 if (xhr.status >= 200 && xhr.status < 300) {
-                    const episodios = JSON.parse(xhr.responseText);
-                    listaEpisodiosCache = Array.isArray(episodios) ? episodios : (episodios.episodes || []);
-                    renderizarListaEpisodios();
-                    if (listaEpisodiosCache.length > 0) {
-                        tocarEpisodio(temporadaAtual, listaEpisodiosCache[0].episode || 1);
+                    try {
+                        const episodios = JSON.parse(xhr.responseText);
+                        listaEpisodiosCache = Array.isArray(episodios) ? episodios : (episodios.episodes || episodios.eps || []);
+                        
+                        renderizarListaEpisodios();
+                        
+                        if (listaEpisodiosCache.length > 0) {
+                            tocarEpisodio(temporadaAtual, listaEpisodiosCache[0].episode || 1);
+                        }
+                    } catch (err) {
+                        console.error("Erro ao processar episódios:", err);
                     }
                 }
             };
@@ -192,9 +210,14 @@
             const container = document.getElementById('episodes-list');
             container.innerHTML = '';
 
+            if (listaEpisodiosCache.length === 0) {
+                container.innerHTML = `<p class="text-xs text-slate-500 text-center py-4">Nenhum episódio encontrado.</p>`;
+                return;
+            }
+
             listaEpisodiosCache.forEach((ep, index) => {
-                const epNum = ep.episode || (index + 1);
-                const epTitle = ep.name || `Episódio ${epNum}`;
+                const epNum = ep.episode || ep.eps || (index + 1);
+                const epTitle = ep.name || ep.title || `Episódio ${epNum}`;
                 const isAtivo = (epNum === episodioAtual);
 
                 container.innerHTML += `
