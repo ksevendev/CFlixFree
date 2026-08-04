@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>K'Seven Stream</title>
-    <!-- Tailwind CSS -->
+    <!-- Tailwind CSS (Modo de produção otimizado via CDN) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background-color: #0f172a; color: #f8fafc; }
@@ -69,6 +69,9 @@
         let temporadaAtual = 1;
         let episodioAtual = 1;
         let listaEpisodiosCache = [];
+
+        // URL de proxy CORS livre para contornar restrições de navegadores em APIs externas
+        const CORS_PROXY = "https://api.allorigins.win/raw?url=";
 
         document.addEventListener("DOMContentLoaded", () => {
             carregarCatalogoJSON();
@@ -143,9 +146,9 @@
         }
 
         function carregarTemporadas(tmdbId) {
+            const targetUrl = encodeURIComponent(`https://superflixapi.pro/serie/${tmdbId}`);
             const xhr = new XMLHttpRequest();
-            // Utiliza rota direta para buscar os dados consolidados da série na SuperFlix API
-            xhr.open('GET', `https://superflixapi.pro/serie/${tmdbId}`, true);
+            xhr.open('GET', CORS_PROXY + targetUrl, true);
             xhr.onload = function() {
                 if (xhr.status >= 200 && xhr.status < 300) {
                     try {
@@ -153,7 +156,6 @@
                         const selectSeason = document.getElementById('select-season');
                         selectSeason.innerHTML = '';
                         
-                        // Compatibilidade para diferentes formatos de retorno da API (seasons array ou objeto)
                         let totalTemporadas = 1;
                         if (Array.isArray(data)) {
                             totalTemporadas = data.length;
@@ -162,7 +164,7 @@
                         } else if (data.total_seasons) {
                             totalTemporadas = data.total_seasons;
                         } else {
-                            totalTemporadas = 6; // Fallback seguro para Peaky Blinders (6 temporadas)
+                            totalTemporadas = 6; // Fallback para Peaky Blinders
                         }
 
                         for (let i = 1; i <= totalTemporadas; i++) {
@@ -172,7 +174,7 @@
                         temporadaAtual = 1;
                         carregarEpisodios();
                     } catch (err) {
-                        console.error("Erro ao processar temporadas:", err);
+                        console.error("Erro ao processar temporadas via proxy:", err);
                     }
                 }
             };
@@ -185,8 +187,9 @@
                 temporadaAtual = parseInt(selectSeason.value);
             }
 
+            const targetUrl = encodeURIComponent(`https://superflixapi.pro/serie/${itemAtual.tmdb_id}/${temporadaAtual}`);
             const xhr = new XMLHttpRequest();
-            xhr.open('GET', `https://superflixapi.pro/serie/${itemAtual.tmdb_id}/${temporadaAtual}`, true);
+            xhr.open('GET', CORS_PROXY + targetUrl, true);
             xhr.onload = function() {
                 if (xhr.status >= 200 && xhr.status < 300) {
                     try {
@@ -199,7 +202,7 @@
                             tocarEpisodio(temporadaAtual, listaEpisodiosCache[0].episode || 1);
                         }
                     } catch (err) {
-                        console.error("Erro ao processar episódios:", err);
+                        console.error("Erro ao processar episódios via proxy:", err);
                     }
                 }
             };
